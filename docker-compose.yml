@@ -1,0 +1,38 @@
+services:
+  celestia-light-node:
+    image: ghcr.io/celestiaorg/celestia-node:v0.13.2
+    container_name: celestia-light-node
+    restart: always
+    env_file:
+      - .env
+    command: ["celestia", "${NODE_TYPE}", "start", "--core.ip", "${RPC_URL}", "--p2p.network", "${P2P_NETWORK}", "--rpc.addr", "0.0.0.0", "--rpc.skip-auth", "--gateway", "--gateway.addr", "0.0.0.0"]
+    ports:
+      - 26658:26658
+    volumes:
+      - ./celestia:/home/celestia
+
+  database:
+    image: postgres:15
+    container_name: 'da-indexer-postgres'
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ''
+      POSTGRES_USER: 'postgres'
+      POSTGRES_HOST_AUTH_METHOD: 'trust'
+    ports:
+      - "9432:5432"
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+
+  da-indexer:
+    image: ghcr.io/blockscout/da-indexer:main
+    container_name: 'da-indexer'
+    restart: always
+    depends_on:
+      - database
+    ports:
+      - "8050:8050"
+      - "8051:8051"
+    env_file:
+      - indexer.env
+  
